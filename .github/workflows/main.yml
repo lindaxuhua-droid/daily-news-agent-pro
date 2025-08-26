@@ -33,8 +33,7 @@ jobs:
         run: |
           # 1) 脚本必须在仓库根目录
           test -f news_agent_pro_v2.py || { echo "::error file=news_agent_pro_v2.py::script not found at repo root"; exit 1; }
-
-          # 2) 最小可用 config/prompt/template（若你仓库已有就不会覆盖）
+          # 2) 最小可用 config/prompt/template（若已存在则不覆盖）
           mkdir -p prompts templates digests
           if [ ! -f config.yaml ]; then
             cat > config.yaml <<'YAML'
@@ -55,16 +54,14 @@ topics:
   - name: 欧洲政策与监管
     keywords: ["EU","Europe","欧洲","欧盟","政策","监管","ECB","Tariff","关税","digital euro"]
   - name: 投融资与市场
-    keywords: ["融资","并购","IPO","投资","VC","并购","Funding","Invest","Series"]
+    keywords: ["融资","并购","IPO","投资","VC","Funding","Invest","Series"]
 YAML
           fi
-
           if [ ! -f prompts/bilingual_system.txt ]; then
             cat > prompts/bilingual_system.txt <<'TXT'
 You are a concise bilingual news summarizer. Given JSON grouped by topic, produce a Chinese digest and a short English TL;DR.
 TXT
           fi
-
           if [ ! -f templates/base.html ]; then
             cat > templates/base.html <<'HTML'
 <!doctype html><html lang="zh"><head>
