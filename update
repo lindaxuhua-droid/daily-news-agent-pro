@@ -1,0 +1,48 @@
+name: Daily News 9am CST
+
+on:
+  schedule:
+    - cron: "0 1 * * *"     # 每天 01:00 UTC = 北京时间 09:00
+  workflow_dispatch:        # 允许网页手动运行
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          python -m pip install feedparser requests beautifulsoup4 PyYAML tenacity python-dotenv markdown
+
+      - name: Ensure files (bootstrap)
+        run: |
+          test -f news_agent_pro_v2.py || { echo "missing news_agent_pro_v2.py at repo root"; exit 1; }
+          mkdir -p prompts templates digests
+          [ -f config.yaml ] || printf "feeds:\n  - name: Reuters Top\n    url: https://feeds.reuters.com/reuters/topNews\n" > config.yaml
+          [ -f prompts/bilingual_system.txt ] || echo "You are a concise bilingual news summarizer." > prompts/bilingual_system.txt
+          [ -f templates/base.html ] || printf '<!doctype html><meta charset="utf-8"><title>{title}</title>%s' '{content}' > templates/base.html
+
+      - name: Run digest + email
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO:  ${{ secrets.MAIL_TO }}
+          OPENAI_COMPATIBLE_BASE_URL: ${{ secrets.OPENAI_COMPATIBLE_BASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MODEL: ${{ secrets.MODEL }}
+        run: python news_agent_pro_v2.py --html --wechat --email
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: digests-${{ github.run_id }}
+          path: digests
+          if-no-files-found: warn
