@@ -3,19 +3,26 @@ name: Daily News 9am CST
 on:
   schedule:
     - cron: "0 1 * * *"   # 每天 01:00 UTC = 北京时间 09:00
-  workflow_dispatch:
+  workflow_dispatch:      # 允许网页端手动运行
 
 jobs:
   send-digest:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: |
+
+      - name: Install deps
+        run: |
           python -m pip install -U pip
           python -m pip install -r requirements.txt
+
       - name: Run digest + email
         env:
           OPENAI_COMPATIBLE_BASE_URL: ${{ secrets.OPENAI_COMPATIBLE_BASE_URL }}
@@ -29,7 +36,9 @@ jobs:
           MAIL_TO: ${{ secrets.MAIL_TO }}
         run: |
           python news_agent_pro_v2.py --html --wechat --email
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: digests-${{ github.run_id }}
           path: digests/*.md,digests/*.html
