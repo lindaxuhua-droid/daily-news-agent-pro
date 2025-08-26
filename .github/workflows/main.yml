@@ -1,8 +1,11 @@
 name: Daily News 9am CST
+
 on:
   schedule:
     - cron: "0 1 * * *"   # 每天 01:00 UTC = 北京时间 09:00
-  workflow_dispatch:jobs:
+  workflow_dispatch:
+
+jobs:
   send-digest:
     runs-on: ubuntu-latest
     steps:
